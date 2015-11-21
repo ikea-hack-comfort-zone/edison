@@ -6,8 +6,9 @@ var groveSensor = require('jsupm_grove');
 var os = require('os');
 var request = require('request');
 
-var interval = 5000;
+var interval = 500;
 var host = '128.199.60.134:3000';
+var soundArray = [];
 
 // Create the light sensor object using AIO pin 0
 var light = new groveSensor.GroveLight(0);
@@ -25,46 +26,27 @@ function readLightSensorValue()
 /**
  * MIC
  */
-
-var upmMicrophone = require('jsupm_mic');
-
-// Attach microphone to analog port A1
-var myMic = new upmMicrophone.Microphone(1);
-
-var threshContext = new upmMicrophone.thresholdContext;
-
-threshContext.averageReading = 0;
-threshContext.runningAverage = 0;
-threshContext.averagedOver = 2;
+var mraa = require('mraa');
+var apio1 = new mraa.Aio(1);
+var soundIndex = 0;
 
 function readMic()
 {
-    var loop = true;
-    var return_thresh = '';
-
-    while(loop)
+    for(var i = 0; i<10; i++) //measurements per loop
     {
-        var buffer = new upmMicrophone.uint16Array(128);
-        var len = myMic.getSampledWindow(2, 128, buffer);
-
-        if (len)
+        var aValue  = apio1.read();
+        if(soundArray.length < 100)
         {
-            var thresh = myMic.findThreshold(threshContext, 30, buffer, len);
-
-            readLightSensorValue();
-
-            if (thresh)
-            {
-                return_thresh = thresh;
-            }
-
-            return_thresh  = thresh || 0;
-
-            loop = false;
+            soundArray.push(aValue);
+        } else {
+            soundArray[soundIndex] = aValue;
         }
+        soundIndex = (soundIndex + 1) % 100; //measurements to average over
     }
-
-    return return_thresh;
+    var arraySum = soundArray.reduce(function(prev, curr, index) {
+        return prev + curr;
+    }, 0); 
+    return arraySum / soundArray.length;
 }
 
 // Print message when exiting
@@ -96,17 +78,6 @@ function readTemp()
 
 var sensor_data = {};
 
-setInterval(function()
-{
-    sensor_data = {
-        'light':readLightSensorValue(),
-        'sound':readMic(),
-        'temp':readTemp()
-    };
-
-    sensor_data = JSON.stringify(sensor_data);
-});
-
 function loop()
 {
     sensor_data = {
@@ -115,6 +86,7 @@ function loop()
         'sound':readMic(),
         'temp':readTemp()
     };
+    console.log(sensor_data);
     var options =  {
         uri: 'http://' + host + '/api/submit',
         method: 'POST',
