@@ -5,10 +5,19 @@
 var groveSensor = require('jsupm_grove');
 var os = require('os');
 var request = require('request');
+var lcd = require('jsupm_i2clcd');
+
+var myLcd = new lcd.Jhd1313m1(0, 0x3E, 0x62);
+myLcd.setColor(53, 39, 249);
+
 
 var interval = 500;
 var host = '128.199.60.134:3000';
 var soundArray = [];
+var soundWindowSec = 3;
+var soundResolution = 20; //measurements per second
+var soundPerLoop = soundResolution * interval * 0.001;
+var soundMaxArray = soundWindowSec * (1000 / interval);
 
 // Create the light sensor object using AIO pin 0
 var light = new groveSensor.GroveLight(0);
@@ -30,19 +39,20 @@ var mraa = require('mraa');
 var apio1 = new mraa.Aio(1);
 var soundIndex = 0;
 
+function senseMic()
+{
+    var aValue = apio1.read();
+    if(soundArray.length < soundMaxArray)
+    {
+        soundArray.push(aValue);
+    } else {
+        soundArray[soundIndex] = aValue;
+    }
+    soundIndex = (soundIndex + 1) % soundMaxArray; //measurements to average over
+}
+
 function readMic()
 {
-    for(var i = 0; i<10; i++) //measurements per loop
-    {
-        var aValue  = apio1.read();
-        if(soundArray.length < 100)
-        {
-            soundArray.push(aValue);
-        } else {
-            soundArray[soundIndex] = aValue;
-        }
-        soundIndex = (soundIndex + 1) % 100; //measurements to average over
-    }
     var arraySum = soundArray.reduce(function(prev, curr, index) {
         return prev + curr;
     }, 0); 
@@ -76,28 +86,46 @@ function readTemp()
  *  DATA GATHER INTERVAL
  */
 
-var sensor_data = {};
+var loopCount = 0;
 
 function loop()
 {
+    senseMic();
+    if(loopCount === 0)
+    {
+        send();
+    }
+    loopCount = (loopCount + 1) % soundPerLoop;
+    setTimeout(loop, interval/soundPerLoop);
+}
+
+var t = 0;
+function send()
+{
+    var sensor_data = {};
+
     sensor_data = {
         'sensor':os.hostname().slice(-1),
         'light':readLightSensorValue(),
         'sound':readMic(),
         'temp':readTemp()
     };
-    console.log(sensor_data);
+    //console.log(sensor_data);
     var options =  {
         uri: 'http://' + host + '/api/submit',
         method: 'POST',
         json: sensor_data
     };
 
+    myLcd.setCursor(0,0);
+
+    myLcd.write(t + ': ' + sensor_data.sound);
+    t = (t + 1) % 10;
+
     request(options, function(err, res, body) 
     {
         if(err) {console.log(err);}
     });
-    setTimeout(loop, interval);
 }
 
 loop();
