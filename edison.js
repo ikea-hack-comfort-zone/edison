@@ -116,7 +116,7 @@ function loop()
         'temp':readTemp()
     };
     var options =  {
-        uri: host + '/api/submit',
+        uri: 'http://' + host + '/api/submit',
         method: 'POST',
         json: sensor_data
     };
@@ -124,8 +124,6 @@ function loop()
     request(options, function(err, res, body) 
     {
         if(err) {console.log(err);}
-        if(res) {console.log(res);}
-        if(body) {console.log(body);}
     });
     setTimeout(loop, interval);
 }
