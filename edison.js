@@ -3,8 +3,11 @@
  */
 
 var groveSensor = require('jsupm_grove');
-var http = require('http');
-var fs = require('fs');
+var os = require('os');
+var request = require('request');
+
+var interval = 5000;
+var host = '128.199.60.134:3000';
 
 // Create the light sensor object using AIO pin 0
 var light = new groveSensor.GroveLight(0);
@@ -104,15 +107,27 @@ setInterval(function()
     sensor_data = JSON.stringify(sensor_data);
 });
 
-/**
- *  HTTP SERV
- */
-
-var app = http.createServer(function(req,res)
+function loop()
 {
-    res.setHeader('Content-Type', 'application/json');
-    res.write(JSON.stringify(sensor_data));
-    res.end();
-});
+    sensor_data = {
+        'sensor':os.hostname().slice(-1),
+        'light':readLightSensorValue(),
+        'sound':readMic(),
+        'temp':readTemp()
+    };
+    var options =  {
+        uri: host + '/api/submit',
+        method: 'POST',
+        json: sensor_data
+    };
 
-app.listen(3000);
+    request(options, function(err, res, body) 
+    {
+        if(err) {console.log(err);}
+        if(res) {console.log(res);}
+        if(body) {console.log(body);}
+    });
+    setTimeout(loop, interval);
+}
+
+loop();
