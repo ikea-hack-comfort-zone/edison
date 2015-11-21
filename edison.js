@@ -3,8 +3,8 @@
  */
 
 var groveSensor = require('jsupm_grove');
-var http = require('http'), 
-       fs = require('fs');
+var http = require('http');
+var fs = require('fs');
 
 // Create the light sensor object using AIO pin 0
 var light = new groveSensor.GroveLight(0);
@@ -23,7 +23,7 @@ function readLightSensorValue()
  * MIC
  */
 
-var upmMicrophone = require("jsupm_mic");
+var upmMicrophone = require('jsupm_mic');
 
 // Attach microphone to analog port A1
 var myMic = new upmMicrophone.Microphone(1);
@@ -34,15 +34,10 @@ threshContext.averageReading = 0;
 threshContext.runningAverage = 0;
 threshContext.averagedOver = 2;
 
-var is_running = false;
-// Infinite loop, ends when script is cancelled
-// Repeatedly, take a sample every 2 microseconds;
-// find the average of 128 samples; and
-// print a running graph of the averages
-// 
 function readMic()
 {
     var loop = true;
+    var return_thresh = '';
 
     while(loop)
     {
@@ -55,8 +50,6 @@ function readMic()
 
             readLightSensorValue();
 
-            var return_thresh = '';
-
             if (thresh)
             {
                 return_thresh = thresh;
@@ -67,12 +60,14 @@ function readMic()
             loop = false;
         }
     }
+
+    return return_thresh;
 }
 
 // Print message when exiting
 process.on('SIGINT', function()
 {
-    console.log("Exiting...");
+    console.log('Exiting...');
     process.exit(0);
 });
 
@@ -82,20 +77,13 @@ var groveSensor1 = require('jsupm_grove');
 // Create the temperature sensor object using AIO pin 2
 var temp = new groveSensor1.GroveTemp(2);
 
-// Read the temperature ten times, printing both the Celsius and
-// equivalent Fahrenheit temperature, waiting one second between readings
-var i = 0;
-
 /**
  * TEMP
  */
 
 function readTemp()
 {
-        var celsius = temp.value();
-        var fahrenheit = celsius * 9.0/5.0 + 32.0;
-
-        return celsius || 0;
+    return temp.value() || 0;
 }
 
 
@@ -110,7 +98,7 @@ setInterval(function()
     sensor_data = {
         'light':readLightSensorValue(),
         'sound':readMic(),
-        'temp':readTemp(),
+        'temp':readTemp()
     };
 
     sensor_data = JSON.stringify(sensor_data);
@@ -122,9 +110,9 @@ setInterval(function()
 
 var app = http.createServer(function(req,res)
 {
-        res.setHeader('Content-Type', 'application/json');
-        res.write(JSON.stringify(sensor_data));
-        res.end();
+    res.setHeader('Content-Type', 'application/json');
+    res.write(JSON.stringify(sensor_data));
+    res.end();
 });
 
 app.listen(3000);
