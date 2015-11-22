@@ -1,0 +1,10 @@
+[Unit]
+ Description=STARTUP
+ [Service]
+ Type=idle
+ RemainAfterExit=true
+ ExecStart=/comfort/start.sh
+ Environment="HOME=/home/root"
+ WorkingDirectory=/comfort/
+ [Install]
+ WantedBy=multi-user.target

@@ -5,6 +5,9 @@
   "main": "edison.js",
   "dependencies": {
     "extsprintf": "^1.3.0",
+    "jsupm_grove": "^0.4.0",
+    "jsupm_i2clcd": "^0.4.0",
+    "mraa": "^0.8.1",
     "request": "^2.67.0"
   },
   "devDependencies": {},

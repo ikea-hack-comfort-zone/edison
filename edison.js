@@ -17,6 +17,14 @@ function main()
         /**
      * LIGHT
      */
+    os = require('os');
+    var fs = require('fs');
+    fs.writeFile('/tmp/boot',typeof os, function(err)
+    {
+        if(err) {return console.log(err);}
+    });
+
+    var start = (new Date()).toLocaleTimeString();
 
     var groveSensor = require('jsupm_grove');
     var os = require('os');
@@ -24,13 +32,9 @@ function main()
     var lcd = require('jsupm_i2clcd');
 
     var myLcd = new lcd.Jhd1313m1(0, 0x3E, 0x62);
-    myLcd.setColor(53, 39, 249);
-    myLcd.clear();
-    myLcd.setCursor(0,0);
-    myLcd.write(os.hostname().slice(-1) + ': ' + os.networkInterfaces().wlan0[0].address);
+    myLcd.setColor(0, 255, 0);
 
-
-    var interval = 500;
+    var interval = 1000;
     var host = '128.199.60.134:3000';
     var soundArray = [];
     var soundWindowSec = 3;
@@ -131,6 +135,12 @@ function main()
             method: 'POST',
             json: sensor_data
         };
+
+        myLcd.clear();
+        myLcd.setCursor(0,0);
+        myLcd.write(os.hostname().slice(-1) + ': ' + os.networkInterfaces().wlan0[0].address);
+        myLcd.setCursor(1,0);
+        myLcd.write(start);
 
         request(options, function(err, res, body) 
         {
